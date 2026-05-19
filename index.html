@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VitalityFlow | Active Workout Companion</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>VitalityFlow | Personalized Workout Companion with Animated Coach & Voice</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -14,252 +14,990 @@
             --accent-primary: #8c7851;
             --accent-secondary: #e6d5b8;
             --text-dark: #2d2a26;
+            --color-male: #4a6fa5;
+            --color-female: #d4a373;
         }
 
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
             background-color: var(--bg-base);
             color: var(--text-dark);
+            transition: background-color 0.5s ease;
+            -webkit-tap-highlight-color: transparent; /* Disable tap highlight on mobile devices */
+            overflow-x: hidden;
         }
 
         .chart-container {
             position: relative;
             width: 100%;
-            max-width: 600px;
+            max-width: 100%;
             margin: 0 auto;
-            height: 300px;
+            height: 220px;
+        }
+        @media (min-width: 640px) {
+            .chart-container {
+                height: 260px;
+            }
         }
 
-        .progress-ring {
-            transition: stroke-dashoffset 0.35s;
-            transform: rotate(-90deg);
-            transform-origin: 50% 50%;
+        /* Cartoon SVG Animations */
+        @keyframes squatting {
+            0%, 100% { transform: translateY(0px) scaleY(1); }
+            50% { transform: translateY(22px) scaleY(0.88); }
         }
-
-        .timer-active {
-            animation: pulse 2s infinite;
+        @keyframes pushup {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(15px) rotate(-4deg); }
         }
-
-        @keyframes pulse {
-            0% { transform: scale(1); }
+        @keyframes jumping {
+            0%, 100% { transform: translateY(0px) scale(1); }
+            50% { transform: translateY(-18px) scale(1.03); }
+        }
+        @keyframes boxing {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-6px); }
+            75% { transform: translateX(6px); }
+        }
+        @keyframes breathing {
+            0%, 100% { transform: scale(1); }
             50% { transform: scale(1.02); }
-            100% { transform: scale(1); }
+        }
+        @keyframes legraise {
+            0%, 100% { transform: rotate(0deg); }
+            50% { transform: rotate(-30deg); }
+        }
+        @keyframes bridge {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-25px); }
         }
 
-        .hidden { display: none; }
+        /* Assigning animations dynamically */
+        .anim-squat { animation: squatting 2.2s ease-in-out infinite; transform-origin: bottom center; }
+        .anim-pushup { animation: pushup 1.8s ease-in-out infinite; transform-origin: center bottom; }
+        .anim-cardio { animation: jumping 1.1s ease-in-out infinite; }
+        .anim-punch { animation: boxing 0.9s ease-in-out infinite; }
+        .anim-rest { animation: breathing 2.8s ease-in-out infinite; }
+        .anim-legraise { animation: legraise 1.8s ease-in-out infinite; transform-origin: 30% 75%; }
+        .anim-bridge { animation: bridge 2s ease-in-out infinite; }
+
+        /* Audio Wave Visualizer Animation */
+        .wave-bar {
+            display: inline-block;
+            width: 3px;
+            height: 14px;
+            background-color: var(--accent-primary);
+            margin: 0 1px;
+            border-radius: 2px;
+            animation: wave 1s ease-in-out infinite;
+        }
+        .wave-bar:nth-child(2) { animation-delay: 0.15s; }
+        .wave-bar:nth-child(3) { animation-delay: 0.3s; }
+        .wave-bar:nth-child(4) { animation-delay: 0.45s; }
+        
+        @keyframes wave {
+            0%, 100% { transform: scaleY(0.4); }
+            50% { transform: scaleY(1.6); }
+        }
+
+        /* Seamless button scale transitions on active touch */
+        .btn-touch-feedback {
+            transition: transform 0.1s ease, background-color 0.2s ease, opacity 0.2s ease;
+        }
+        .btn-touch-feedback:active {
+            transform: scale(0.96);
+        }
     </style>
 </head>
-<body class="min-h-screen pb-20">
+<body class="min-h-screen pb-12">
 
-    <!-- Chosen Palette: Earthy Minimalism (Sand, Olive, Charcoal) -->
-    <!-- Application Structure Plan: 
-        The SPA is redesigned as a 'Task-Oriented Session Tool' rather than a static report.
-        1. Setup Phase: Users can toggle equipment and see the session analytics.
-        2. Live Session Engine: A dedicated UI state for the actual workout. It includes a JS-driven timer that manages the 45s/15s intervals.
-        3. Round Tracker: Visual progress indicators for the 3-round circuit requirement.
-        4. Post-Session Summary: A dynamic report generated after completion.
-        This structure is chosen to lower the barrier to entry—the user doesn't have to manage their own clock or memorize the sequence.
-    -->
-    <!-- Visualization & Content Choices: 
-        - Muscle Engagement -> Goal: Inform -> Radar Chart (Chart.js) -> Shows balanced load across muscle groups.
-        - Progress Tracking -> Goal: Change -> CSS-based Progress Bars -> Shows session completion percentage.
-        - Timer -> Goal: Organize/Change -> JS Interval Engine -> Manages the flow of the workout.
-        - Equipment Filter -> Goal: Compare -> JS Data Filtering -> Adjusts exercise cues based on user environment.
-    -->
-    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
-
-    <nav class="bg-white/80 backdrop-blur-md sticky top-0 z-50 border-b border-stone-100">
-        <div class="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
+    <nav class="bg-white/80 backdrop-blur-md sticky top-0 z-40 border-b border-stone-100 px-4">
+        <div class="max-w-5xl mx-auto h-16 flex items-center justify-between">
             <div class="flex items-center space-x-2">
-                <span class="text-xl">🌿</span>
-                <span class="font-bold tracking-tight text-stone-800 uppercase text-sm">VitalityFlow Companion</span>
+                <span class="text-lg md:text-xl">🌿</span>
+                <span class="font-bold tracking-tight text-stone-800 uppercase text-xs md:text-sm">VitalityFlow Coach</span>
             </div>
-            <div id="session-status" class="text-xs font-bold text-stone-400 uppercase tracking-widest">Ready to Start</div>
+            <div id="session-status" class="text-[10px] md:text-xs font-bold text-stone-400 uppercase tracking-wider md:tracking-widest">Setup Phase</div>
         </div>
     </nav>
 
-    <main class="max-w-5xl mx-auto px-6 pt-10">
+    <main class="max-w-5xl mx-auto px-4 pt-6 md:pt-10">
         
-        <!-- Pre-Workout Dashboard -->
-        <div id="setup-view">
-            <section class="mb-12">
-                <div class="flex flex-col md:flex-row justify-between items-end gap-6 mb-8">
+        <!-- Setup View Container -->
+        <div id="setup-view" class="space-y-6 md:space-y-8">
+            <section class="space-y-6">
+                <!-- Header with Track Switcher -->
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 md:gap-6">
                     <div>
-                        <h1 class="text-4xl font-bold text-stone-900 mb-2">Daily Routine</h1>
-                        <p class="text-stone-500">3 Rounds • 45s Work • 15s Rest</p>
+                        <h1 class="text-3xl md:text-4xl font-bold text-stone-900 tracking-tight leading-none mb-2">Personalized Low-Impact</h1>
+                        <p class="text-stone-500 text-sm">Pick your gender track and customize your session style.</p>
                     </div>
-                    <div class="flex bg-stone-200 p-1 rounded-xl">
-                        <button onclick="toggleEquipment(false)" id="btn-no-equip" class="px-4 py-2 rounded-lg text-sm font-semibold transition-all bg-white shadow-sm">No Equipment</button>
-                        <button onclick="toggleEquipment(true)" id="btn-equip" class="px-4 py-2 rounded-lg text-sm font-semibold transition-all text-stone-500">With Chair</button>
+
+                    <!-- Gender Segment Switcher -->
+                    <div class="bg-stone-200 p-1 rounded-2xl flex w-full md:w-auto shadow-inner">
+                        <button onclick="toggleGenderTrack('male')" id="btn-track-male" class="btn-touch-feedback flex-1 md:flex-initial px-5 py-2 rounded-xl text-xs md:text-sm font-bold transition-all bg-white shadow-sm text-sky-700">
+                            👨 Male Track
+                        </button>
+                        <button onclick="toggleGenderTrack('female')" id="btn-track-female" class="btn-touch-feedback flex-1 md:flex-initial px-5 py-2 rounded-xl text-xs md:text-sm font-bold transition-all text-stone-500">
+                            👩 Female Track
+                        </button>
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    <div class="bg-white p-8 rounded-3xl border border-stone-100">
-                        <h3 class="font-bold mb-6 flex items-center space-x-2">
-                            <span>💪</span> <span>Target Areas</span>
+                <!-- Live Configuration Parameters -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
+                    <div class="bg-white p-5 md:p-6 rounded-3xl border border-stone-100 flex flex-col justify-between shadow-sm space-y-4">
+                        <div class="space-y-4">
+                            <div>
+                                <h3 class="font-bold text-stone-800 text-base md:text-lg mb-1 flex items-center gap-2">
+                                    <span>⚙️</span> Customize Mode
+                                </h3>
+                                <p class="text-xs text-stone-500">Select how you want to play instructions and transition exercises.</p>
+                            </div>
+
+                            <!-- Equipment Setting -->
+                            <div class="space-y-2">
+                                <label class="text-[10px] font-bold text-stone-400 uppercase tracking-wider">Equipment</label>
+                                <div class="bg-stone-100 p-1 rounded-xl flex">
+                                    <button onclick="toggleEquipment(false)" id="btn-no-equip" class="btn-touch-feedback flex-1 py-1.5 rounded-lg text-xs font-bold transition-all bg-white shadow-sm text-stone-800">No Equipment</button>
+                                    <button onclick="toggleEquipment(true)" id="btn-equip" class="btn-touch-feedback flex-1 py-1.5 rounded-lg text-xs font-bold transition-all text-stone-400">With Chair</button>
+                                </div>
+                            </div>
+
+                            <!-- Auto/Manual Switcher -->
+                            <div class="space-y-2">
+                                <label class="text-[10px] font-bold text-stone-400 uppercase tracking-wider">Control Engine</label>
+                                <div class="bg-stone-100 p-1 rounded-xl flex">
+                                    <button onclick="toggleWorkoutMode('auto')" id="btn-mode-auto" class="btn-touch-feedback flex-1 py-1.5 rounded-lg text-xs font-bold transition-all bg-white shadow-sm text-stone-800">⏱️ Automatic</button>
+                                    <button onclick="toggleWorkoutMode('manual')" id="btn-mode-manual" class="btn-touch-feedback flex-1 py-1.5 rounded-lg text-xs font-bold transition-all text-stone-400">👤 Manual</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Radar Distribution Display -->
+                    <div class="bg-white p-5 md:p-6 rounded-3xl border border-stone-100 shadow-sm lg:col-span-2 space-y-3">
+                        <h3 class="font-bold text-stone-800 flex items-center space-x-2 text-base md:text-lg">
+                            <span>📊</span> <span id="chart-title">Muscle Intensity Grid</span>
                         </h3>
                         <div class="chart-container">
                             <canvas id="radarChart"></canvas>
                         </div>
                     </div>
-                    <div class="space-y-4">
-                        <div class="bg-stone-800 text-white p-8 rounded-3xl relative overflow-hidden">
-                            <h3 class="text-2xl font-bold mb-2">Ready to move?</h3>
-                            <p class="text-stone-400 mb-6 text-sm">The timer will guide you through all 3 rounds automatically.</p>
-                            <button onclick="startWorkout()" class="bg-[#e6d5b8] text-stone-900 px-8 py-4 rounded-2xl font-bold hover:bg-[#d4c1a3] transition-all flex items-center space-x-3">
-                                <span>▶️</span>
-                                <span>Start Live Session</span>
-                            </button>
-                        </div>
-                        <div class="bg-white p-6 rounded-3xl border border-stone-100">
-                            <h4 class="font-bold mb-3 text-sm uppercase tracking-wider text-stone-400">Sequence Preview</h4>
-                            <ul class="space-y-3 text-sm" id="preview-list">
-                                <!-- Populated by JS -->
-                            </ul>
+                </div>
+
+                <!-- Voice Coach Parameters -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                    <div class="bg-stone-50 p-5 md:p-6 rounded-3xl border border-stone-150 flex flex-col justify-between space-y-4">
+                        <div>
+                            <h3 class="font-bold text-base md:text-lg mb-2 flex items-center space-x-2 text-stone-800">
+                                <span>🎙️</span> <span>AI Coach & Audio Voice (صوتی کوچ)</span>
+                            </h3>
+                            <p class="text-xs text-stone-500 mb-4 leading-relaxed">
+                                ہماری انقلابی صوتی کوچ فیچر کو آن کریں۔ یہ خودکار موڈ کے دوران آپ کو ورزش کا وقت، طریقے، الٹی گنتی اور اردو ترغیب فراہم کرے گی۔
+                            </p>
+                            
+                            <!-- Toggle Button -->
+                            <div class="flex items-center justify-between mb-4 bg-white p-3.5 rounded-xl border border-stone-100">
+                                <span class="text-xs md:text-sm font-semibold text-stone-700">Coach Audio System</span>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="voice-toggle" class="sr-only peer" checked onchange="handleVoiceToggle()">
+                                    <div class="w-11 h-6 bg-stone-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-stone-800"></div>
+                                </label>
+                            </div>
+
+                            <!-- Coach voices -->
+                            <div class="space-y-2">
+                                <label class="text-[10px] font-bold text-stone-500 uppercase">Coach Voice Tone</label>
+                                <select id="voice-persona" class="w-full bg-white border border-stone-200 rounded-xl p-2.5 text-xs md:text-sm font-semibold text-stone-700 focus:outline-none focus:ring-2 focus:ring-stone-300">
+                                    <option value="Sulafat" selected>Sulafat (Warm & Encouraging - Female)</option>
+                                    <option value="Zephyr">Zephyr (Bright & Energetic - Neutral)</option>
+                                    <option value="Kore">Kore (Firm & Assertive - Masculine)</option>
+                                    <option value="Fenrir">Fenrir (Excitable & Active - Masculine)</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
+
+                    <!-- Sequence List Preview -->
+                    <div class="bg-white p-5 md:p-6 rounded-3xl border border-stone-100 shadow-sm flex flex-col justify-between space-y-4">
+                        <div>
+                            <h4 class="font-bold mb-3 text-[10px] uppercase tracking-wider text-stone-400">Workout Sequence Preview</h4>
+                            <ul class="space-y-2 text-xs md:text-sm" id="preview-list">
+                                <!-- Populated dynamically by JS -->
+                            </ul>
+                        </div>
+                        <div class="pt-3 border-t border-stone-100 text-stone-400 text-[10px] md:text-xs">
+                            Total Session Time: 15 Minutes (3 Rounds)
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CTA Play Banner -->
+                <div class="bg-stone-800 text-white p-6 md:p-8 rounded-3xl overflow-hidden flex flex-col md:flex-row justify-between items-center gap-4 md:gap-6">
+                    <div class="text-center md:text-left">
+                        <h3 class="text-xl md:text-2xl font-bold mb-1">Let's get moving!</h3>
+                        <p class="text-stone-400 text-xs md:text-sm">Every element of this plan adjusts dynamically based on your chosen track.</p>
+                    </div>
+                    <button onclick="startWorkout()" class="btn-touch-feedback bg-[#e6d5b8] text-stone-900 px-8 py-3.5 rounded-2xl font-bold hover:bg-[#d4c1a3] transition-all flex items-center justify-center space-x-2 w-full md:w-auto text-center shadow-lg text-sm">
+                        <span>▶️</span>
+                        <span>Start Workout Session</span>
+                    </button>
                 </div>
             </section>
         </div>
 
-        <!-- Live Workout View -->
+        <!-- Workout View Container -->
         <div id="workout-view" class="hidden">
-            <div class="max-w-2xl mx-auto">
-                <div class="text-center mb-10">
-                    <div id="round-indicator" class="inline-block px-4 py-1 bg-stone-200 rounded-full text-xs font-bold mb-4 uppercase tracking-widest">Round 1 / 3</div>
-                    <h2 id="current-ex-name" class="text-5xl font-bold mb-2">Get Ready</h2>
-                    <p id="current-ex-focus" class="text-[#8c7851] font-semibold text-xl">Preparation</p>
+            <div class="max-w-xl mx-auto space-y-6">
+                
+                <!-- Mid-workout Switchers -->
+                <div class="flex justify-between items-center gap-3">
+                    <div class="bg-stone-200/80 p-1 rounded-xl flex space-x-1 shadow-inner">
+                        <button onclick="toggleWorkoutMode('auto')" id="live-mode-auto" class="btn-touch-feedback px-3 py-1.5 rounded-lg text-[10px] md:text-xs font-bold uppercase tracking-wider transition-all">⏱️ Auto</button>
+                        <button onclick="toggleWorkoutMode('manual')" id="live-mode-manual" class="btn-touch-feedback px-3 py-1.5 rounded-lg text-[10px] md:text-xs font-bold uppercase tracking-wider transition-all">👤 Manual</button>
+                    </div>
+
+                    <!-- Quick Voice Control during session -->
+                    <button onclick="toggleLiveVoice()" id="live-voice-btn" class="btn-touch-feedback p-2 rounded-xl bg-white border border-stone-200 hover:bg-stone-50 transition-all text-xs font-semibold flex items-center space-x-1">
+                        <span id="live-voice-icon">🔊</span>
+                        <span id="live-voice-text" class="hidden xs:inline">Voice On</span>
+                    </button>
                 </div>
 
-                <div class="relative flex justify-center items-center mb-12">
-                    <div id="timer-display" class="text-8xl font-black tabular-nums text-stone-800">10</div>
-                    <div class="absolute inset-0 flex items-center justify-center -z-10">
-                        <div id="timer-ring" class="w-64 h-64 border-8 border-stone-100 rounded-full"></div>
+                <div class="text-center space-y-2">
+                    <div id="round-indicator" class="inline-block px-3 py-1 bg-stone-200 rounded-full text-[10px] font-bold uppercase tracking-wider text-stone-600">Round 1 / 3</div>
+                    <h2 id="current-ex-name" class="text-2xl sm:text-3xl md:text-4xl font-bold text-stone-900 leading-tight">Get Ready</h2>
+                    <p id="current-ex-focus" class="text-[#8c7851] font-semibold text-sm sm:text-base">Preparation Phase</p>
+                </div>
+
+                <!-- Dynamic Animated Avatar Space with Swipe Touch Support -->
+                <div id="avatar-touch-container" class="bg-white rounded-3xl border border-stone-100 shadow-sm p-4 flex flex-col items-center justify-center relative overflow-hidden h-64 md:h-72 select-none touch-none">
+                    <!-- Speaking wave -->
+                    <div id="speaking-wave" class="hidden absolute top-3 right-3 flex items-center space-x-1 bg-stone-50 border border-stone-100 px-2 py-1 rounded-full shadow-sm z-10">
+                        <span class="text-[10px] text-stone-500 font-semibold mr-1">Coach speaking</span>
+                        <div class="wave-bar"></div>
+                        <div class="wave-bar"></div>
+                        <div class="wave-bar"></div>
+                    </div>
+
+                    <!-- Dynamic SVG Render Target -->
+                    <div id="avatar-render-area" class="w-full h-full flex items-center justify-center pointer-events-none">
+                        <!-- SVG code loaded dynamically from JS -->
+                    </div>
+
+                    <!-- Swipe Tutorial Tip for Mobile Users -->
+                    <div class="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-[9px] text-stone-400 font-bold opacity-70 pointer-events-none uppercase tracking-wider">
+                        ← Swipe to change steps (مینول) →
                     </div>
                 </div>
 
-                <div class="bg-white p-8 rounded-3xl border border-stone-100 shadow-xl mb-8">
-                    <div class="flex items-start space-x-4">
-                        <div class="bg-stone-50 p-4 rounded-2xl text-3xl" id="ex-icon">⏱️</div>
-                        <div>
-                            <h4 class="font-bold text-lg mb-1">Coach's Cue</h4>
-                            <p id="current-ex-tip" class="text-stone-600 leading-relaxed">Adjust your mat and grab some water. We start in a few seconds.</p>
+                <!-- Timer / Countdown Area -->
+                <div class="relative flex flex-col justify-center items-center">
+                    <div id="timer-display" class="text-6xl sm:text-7xl md:text-8xl font-black tabular-nums text-stone-850 leading-none">10</div>
+                    <div id="timer-label" class="text-[10px] uppercase tracking-widest text-stone-400 font-bold mt-1">seconds left</div>
+                </div>
+
+                <!-- Instruction Guidelines Box -->
+                <div class="bg-white p-5 rounded-3xl border border-stone-100 shadow-sm">
+                    <div class="flex items-start space-x-3.5">
+                        <div class="bg-stone-50 p-3 rounded-2xl text-2xl" id="ex-icon">⏱️</div>
+                        <div class="flex-1 min-w-0">
+                            <h4 class="font-bold text-sm md:text-base mb-1">Coach's Guide (ہدایت)</h4>
+                            <p id="current-ex-tip" class="text-stone-600 leading-relaxed text-xs md:text-sm">We are setting up your personal avatar workout. Stretch and ready your space!</p>
                         </div>
                     </div>
                 </div>
 
-                <div class="flex justify-between items-center space-x-4">
-                    <button onclick="pauseWorkout()" id="pause-btn" class="flex-1 py-4 bg-stone-100 rounded-2xl font-bold hover:bg-stone-200">Pause</button>
-                    <button onclick="quitWorkout()" class="flex-1 py-4 text-stone-400 font-bold hover:text-red-500">Quit</button>
+                <!-- Live Control Panel -->
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center gap-2">
+                        <button onclick="previousStep()" class="btn-touch-feedback flex-1 py-3.5 bg-stone-100 text-stone-700 rounded-2xl font-bold hover:bg-stone-200 transition-all flex items-center justify-center space-x-1 text-xs md:text-sm">
+                            <span>◀</span> <span>Prev</span>
+                        </button>
+                        
+                        <!-- Middle Play/Pause Button -->
+                        <button onclick="pauseWorkout()" id="pause-btn" class="btn-touch-feedback flex-1 py-3.5 bg-stone-800 text-white rounded-2xl font-bold hover:bg-stone-700 transition-all flex items-center justify-center space-x-1 text-xs md:text-sm">
+                            <span id="pause-icon">⏸</span> <span id="pause-text">Pause</span>
+                        </button>
+                        
+                        <button onclick="nextStep()" class="btn-touch-feedback flex-1 py-3.5 bg-[#e6d5b8] text-stone-900 rounded-2xl font-bold hover:bg-[#d4c1a3] transition-all flex items-center justify-center space-x-1 text-xs md:text-sm">
+                            <span>Next</span> <span>▶</span>
+                        </button>
+                    </div>
+
+                    <div class="text-center">
+                        <button onclick="triggerQuitModal()" class="text-xs text-stone-400 font-bold hover:text-red-500 transition-colors uppercase tracking-wider py-1.5 px-3 rounded-lg hover:bg-stone-50 inline-block">Quit Session</button>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- Completion View -->
-        <div id="complete-view" class="hidden text-center py-20">
-            <span class="text-7xl mb-6 block">🏆</span>
-            <h2 class="text-4xl font-bold mb-4">Workout Complete!</h2>
-            <p class="text-stone-500 mb-10">You've successfully completed all 3 rounds of low-impact training.</p>
-            <div class="max-w-sm mx-auto grid grid-cols-2 gap-4 mb-10">
-                <div class="bg-white p-4 rounded-2xl border border-stone-100">
-                    <p class="text-2xl font-bold">40</p>
-                    <p class="text-xs text-stone-400 uppercase">Minutes</p>
+        <!-- Session Finished Container -->
+        <div id="complete-view" class="hidden text-center py-12 md:py-20 space-y-6">
+            <span class="text-6xl md:text-7xl mb-4 block">🏆</span>
+            <h2 class="text-3xl md:text-4xl font-bold text-stone-900 leading-tight">Session Finished!</h2>
+            <p class="text-stone-500 text-sm max-w-xs md:max-w-md mx-auto">Awesome job! You successfully finished all rounds of your customized workout routine.</p>
+            <div class="max-w-xs md:max-w-sm mx-auto grid grid-cols-2 gap-3">
+                <div class="bg-white p-4 rounded-2xl border border-stone-100 shadow-sm">
+                    <p class="text-2xl font-bold text-stone-800" id="total-duration-display">15</p>
+                    <p class="text-[10px] text-stone-400 uppercase font-semibold">Minutes Done</p>
                 </div>
-                <div class="bg-white p-4 rounded-2xl border border-stone-100">
-                    <p class="text-2xl font-bold">15</p>
-                    <p class="text-xs text-stone-400 uppercase">Exercises</p>
+                <div class="bg-white p-4 rounded-2xl border border-stone-100 shadow-sm">
+                    <p class="text-2xl font-bold text-stone-800">15</p>
+                    <p class="text-[10px] text-stone-400 uppercase font-semibold">Interval Steps</p>
                 </div>
             </div>
-            <button onclick="location.reload()" class="bg-stone-800 text-white px-10 py-4 rounded-2xl font-bold">Finish</button>
+            <button onclick="location.reload()" class="btn-touch-feedback bg-stone-800 text-white px-8 py-3.5 rounded-2xl font-bold hover:bg-stone-750 shadow-md text-sm">Finish</button>
         </div>
 
     </main>
 
+    <!-- Custom Beautiful Modal for Exit Confirmation (Replaces alert/confirm) -->
+    <div id="quit-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-sm transition-opacity duration-300">
+        <div class="bg-white w-full max-w-md p-6 rounded-3xl shadow-2xl border border-stone-100 transform scale-100 transition-transform duration-300 space-y-5">
+            <div class="text-center space-y-2">
+                <span class="text-4xl">🚪</span>
+                <h3 class="text-lg md:text-xl font-bold text-stone-900 leading-snug">Exit Workout? (ورزش ختم کریں؟)</h3>
+                <p class="text-stone-500 text-xs md:text-sm">Are you sure you want to end your active training session? Your progress will not be saved.</p>
+            </div>
+            <div class="flex gap-3 pt-2">
+                <button onclick="dismissQuitModal()" class="btn-touch-feedback flex-1 py-3 bg-stone-100 text-stone-700 font-bold rounded-2xl text-xs md:text-sm hover:bg-stone-200 transition-all">
+                    Cancel (جاری رکھیں)
+                </button>
+                <button onclick="confirmQuitWorkout()" class="btn-touch-feedback flex-1 py-3 bg-red-500 text-white font-bold rounded-2xl text-xs md:text-sm hover:bg-red-600 transition-all">
+                    Yes, Quit (جی ہاں)
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script>
-        const exercises = [
-            { name: "Chair/Air Squats", focus: "Glutes & Quads", tip: "Weight in heels. Tap the chair lightly then stand.", tipNoEquip: "Imagine sitting on a low stool. Keep chest tall.", icon: "🦵" },
-            { name: "Push-Ups", focus: "Chest & Shoulders", tip: "Use a wall or counter for an incline. Steady rhythm.", tipNoEquip: "Keep body straight from head to heels. Hands wide.", icon: "💪" },
-            { name: "Side-Steps", focus: "Cardio", tip: "Step wide, pull arms down firmly.", tipNoEquip: "Increase speed to raise heart rate.", icon: "🏃" },
-            { name: "Bird-Dogs", focus: "Core & Back", tip: "Don't arch your back. Reach with intention.", tipNoEquip: "Opposite arm and leg. Hold for 2 seconds.", icon: "🧘" },
-            { name: "Glute Bridges", focus: "Hips & Core", tip: "Squeeze glutes at the top. Feet flat.", tipNoEquip: "Drive through your heels. Keep neck relaxed.", icon: "🍑" }
+        // Separate Exercise Arrays for Males & Females
+        const exercisesMale = [
+            { 
+                name: "Chair/Air Squats", 
+                focus: "Quads & Glutes", 
+                tip: "Weight in heels. Tap the chair lightly then stand up tall.", 
+                tipNoEquip: "Imagine sitting on a low stool. Keep hands forward, back flat.", 
+                icon: "🦵", 
+                urduCue: "Air Squats. Shabaash, weight heels per rakhen, aur up and down move karen.",
+                animClass: "anim-squat"
+            },
+            { 
+                name: "Incline Push-Ups", 
+                focus: "Chest & Upper Arms", 
+                tip: "Lean on a sturdy desk or chair. Inhale down, exhale push.", 
+                tipNoEquip: "Get to floor knee pushups. Maintain a solid straight spine line.", 
+                icon: "💪", 
+                urduCue: "Incline Push-Ups. Apni chaati ko mazboot rakhen aur chest ko niche le ja kar push karen.",
+                animClass: "anim-pushup"
+            },
+            { 
+                name: "Shadow Boxing", 
+                focus: "Cardio & Shoulders", 
+                tip: "Extend punches fully. Bounce lightly on feet.", 
+                tipNoEquip: "Punch air from stable stance. Work on quick controlled movement.", 
+                icon: "🥊", 
+                urduCue: "Shadow Boxing. Dono haathon se aik aik kar k punches lagayen, apna stamina barhayen.",
+                animClass: "anim-punch"
+            },
+            { 
+                name: "Bird-Dog Plank", 
+                focus: "Spine & Core Plank", 
+                tip: "Engage core while stretching opposite arm and leg straight.", 
+                tipNoEquip: "Keep hands directly under your shoulders. Hold balances.", 
+                icon: "🧘", 
+                urduCue: "Bird-Dog. Apne jism ko mazboot rakhen aur hath-paon ka tawazun barqarar rakhen.",
+                animClass: "anim-rest"
+            },
+            { 
+                name: "Step-Jacks (Low Impact)", 
+                focus: "Lungs & Cardio", 
+                tip: "Step out to sides while lifting arms like jumping jacks.", 
+                tipNoEquip: "No jumping, just quick leg slides. Raise heart rate safely.", 
+                icon: "🏃", 
+                urduCue: "Step-Jacks. Daayen baayen qadam nikalen, hath ooper le jayen par jump nahi lagani.",
+                animClass: "anim-cardio"
+            }
         ];
 
+        const exercisesFemale = [
+            { 
+                name: "Glute Bridges", 
+                focus: "Lower Hips & Posterior", 
+                tip: "Keep feet flat. Squeeze glutes at the peak of hip raise.", 
+                tipNoEquip: "Press heels hard to floor. Lower back down gently.", 
+                icon: "🍑", 
+                urduCue: "Glute Bridges. Apne hips ko ooper uthayen aur thora hold karen, phir neechy aayen.",
+                animClass: "anim-bridge"
+            },
+            { 
+                name: "Wall Angels", 
+                focus: "Shoulders & Back Stretch", 
+                tip: "Slide your arms and elbows up and down the wall surface.", 
+                tipNoEquip: "Squeeze shoulder blades together backwards. Open chest wide.", 
+                icon: "👐", 
+                urduCue: "Wall Angels. Haathon ko ooper uthayen aur kandhon k pichle hisse ko khinchain.",
+                animClass: "anim-rest"
+            },
+            { 
+                name: "Side Leg Raises", 
+                focus: "Hips & Outer Thighs", 
+                tip: "Hold a chair for balance. Lift outer leg up steadily.", 
+                tipNoEquip: "Lie on your side on the mat. Lift leg without twisting pelvis.", 
+                icon: "📐", 
+                urduCue: "Side Leg Raises. Leg ko seedha ooper le jayen aur control k sath nechy laayen.",
+                animClass: "anim-legraise"
+            },
+            { 
+                name: "Bird-Dogs", 
+                focus: "Core & Balance", 
+                tip: "On hands and knees, reach arm forward and opposite leg back.", 
+                tipNoEquip: "Tuck belly button to spine. No arching the lower back.", 
+                icon: "🧘", 
+                urduCue: "Bird-Dogs. Balance barqarar rakhen aur thora hold karen.",
+                animClass: "anim-rest"
+            },
+            { 
+                name: "Lateral Side-Steps with Pull", 
+                focus: "Cardio & Arm Pulldowns", 
+                tip: "Step side-to-side while pulling arms down from above.", 
+                tipNoEquip: "Add rapid arm movements. Stay low to feel leg tension.", 
+                icon: "💃", 
+                urduCue: "Lateral Side-Steps. Daayen baayen qadam barhayen aur bazuon ko ooper se kheenchain.",
+                animClass: "anim-cardio"
+            }
+        ];
+
+        // Global Track and Control states
+        let selectedGender = 'male'; // 'male' or 'female'
         let hasEquipment = false;
+        let workoutMode = 'auto'; // 'auto' or 'manual'
+        let currentStepIndex = -1;
+        const totalSteps = 30; // 3 rounds * 5 exercises * 2 intervals (work/rest) = 30
+        
         let timer = null;
         let timeLeft = 10;
-        let currentExIndex = -1;
-        let currentRound = 1;
-        let isResting = true;
         let isPaused = false;
+        let elapsedSeconds = 0;
+
+        let voiceEnabled = true;
+        let currentAudio = null;
+        let voiceDebounceTimeout = null;
+
+        // Custom SVGs corresponding to Gender and Exercise
+        function generateAnimatedAvatarSVG(gender, exerciseClass, icon) {
+            const bodyColor = gender === 'male' ? '#3a5f85' : '#c38d5d';
+            const headColor = '#f5cba7';
+            const pantsColor = gender === 'male' ? '#1c2833' : '#34495e';
+            const hairColor = gender === 'male' ? '#1b2631' : '#a04000';
+
+            // Base SVG frame
+            let svgContent = `
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" class="w-40 h-40 md:w-48 md:h-48 ${exerciseClass}">
+                <!-- Background visual aids -->
+                <circle cx="100" cy="100" r="90" fill="none" stroke="#f0ece6" stroke-width="4" stroke-dasharray="4,4"/>
+                
+                <!-- Floor Shadow -->
+                <ellipse cx="100" cy="165" rx="55" ry="8" fill="#eae4da" />
+            `;
+
+            // Draw dynamic graphics based on selected avatar style
+            if (gender === 'male') {
+                svgContent += `
+                    <!-- Male Avatar -->
+                    <g transform="translate(0, -10)">
+                        <!-- Legs -->
+                        <line x1="85" y1="110" x2="85" y2="160" stroke="${pantsColor}" stroke-width="12" stroke-linecap="round" />
+                        <line x1="115" y1="110" x2="115" y2="160" stroke="${pantsColor}" stroke-width="12" stroke-linecap="round" />
+                        
+                        <!-- Torso/Shirt -->
+                        <path d="M75 60 L125 60 L120 115 L80 115 Z" fill="${bodyColor}" />
+                        
+                        <!-- Neck -->
+                        <rect x="95" y="48" width="10" height="15" fill="${headColor}" />
+                        
+                        <!-- Head -->
+                        <circle cx="100" cy="40" r="16" fill="${headColor}" />
+                        <!-- Hair -->
+                        <path d="M84 38 Q100 20 116 38 Q100 32 84 38 Z" fill="${hairColor}" />
+                        
+                        <!-- Arms -->
+                        <line x1="75" y1="65" x2="55" y2="105" stroke="${bodyColor}" stroke-width="8" stroke-linecap="round" />
+                        <line x1="125" y1="65" x2="145" y2="105" stroke="${bodyColor}" stroke-width="8" stroke-linecap="round" />
+                        
+                        <!-- Dynamic overlay for punch exercise -->
+                        ${exerciseClass === 'anim-punch' ? `
+                            <circle cx="45" cy="105" r="8" fill="#c0392b" />
+                            <circle cx="155" cy="105" r="8" fill="#c0392b" />
+                        ` : ''}
+                    </g>
+                `;
+            } else {
+                svgContent += `
+                    <!-- Female Avatar -->
+                    <g transform="translate(0, -10)">
+                        <!-- Hair back -->
+                        <path d="M90 40 Q100 65 110 40 Z" fill="${hairColor}" />
+                        
+                        <!-- Legs -->
+                        <line x1="86" y1="110" x2="86" y2="160" stroke="${pantsColor}" stroke-width="10" stroke-linecap="round" />
+                        <line x1="114" y1="110" x2="114" y2="160" stroke="${pantsColor}" stroke-width="10" stroke-linecap="round" />
+                        
+                        <!-- Torso/Top -->
+                        <path d="M80 62 L120 62 L115 112 L85 112 Z" fill="${bodyColor}" />
+                        
+                        <!-- Neck -->
+                        <rect x="96" y="50" width="8" height="15" fill="${headColor}" />
+                        
+                        <!-- Head -->
+                        <circle cx="100" cy="42" r="15" fill="${headColor}" />
+                        <!-- Hair front -->
+                        <circle cx="100" cy="36" r="16" fill="${hairColor}" clip-path="polygon(0 0, 100 0, 100 10, 0 10)" />
+                        <path d="M85 40 Q100 30 115 40 Z" fill="${hairColor}" />
+                        
+                        <!-- Arms -->
+                        <line x1="80" y1="65" x2="60" y2="100" stroke="${bodyColor}" stroke-width="6" stroke-linecap="round" />
+                        <line x1="120" y1="65" x2="140" y2="100" stroke="${bodyColor}" stroke-width="6" stroke-linecap="round" />
+                    </g>
+                `;
+            }
+
+            // Big Emoji Symbol in corner for context
+            svgContent += `
+                <!-- Workout Icon Context badge -->
+                <g transform="translate(145, 25)">
+                    <circle cx="20" cy="20" r="22" fill="#fff" stroke="#eee" stroke-width="1" />
+                    <text x="20" y="27" font-size="20" text-anchor="middle">${icon}</text>
+                </g>
+            </svg>
+            `;
+
+            return svgContent;
+        }
+
+        // Touch Swipe Event Listeners for the Avatar Canvas
+        let touchStartX = 0;
+        let touchEndX = 0;
+
+        const gestureArea = document.getElementById('avatar-touch-container');
+        gestureArea.addEventListener('touchstart', (e) => {
+            touchStartX = e.changedTouches[0].screenX;
+        }, { passive: true });
+
+        gestureArea.addEventListener('touchend', (e) => {
+            touchEndX = e.changedTouches[0].screenX;
+            handleSwipeGesture();
+        }, { passive: true });
+
+        function handleSwipeGesture() {
+            const threshold = 50; // Minimum distance to register as swipe
+            if (touchEndX < touchStartX - threshold) {
+                // Swiped Left -> Go to Next Exercise
+                nextStep();
+            } else if (touchEndX > touchStartX + threshold) {
+                // Swiped Right -> Go to Previous Exercise
+                previousStep();
+            }
+        }
+
+        function toggleGenderTrack(gender) {
+            selectedGender = gender;
+            
+            // Adjust body styling
+            if(gender === 'male') {
+                document.body.style.backgroundColor = '#f4f7f9';
+                document.getElementById('btn-track-male').className = 'btn-touch-feedback flex-1 md:flex-initial px-5 py-2 rounded-xl text-xs md:text-sm font-bold transition-all bg-white shadow-sm text-sky-700';
+                document.getElementById('btn-track-female').className = 'btn-touch-feedback flex-1 md:flex-initial px-5 py-2 rounded-xl text-xs md:text-sm font-bold transition-all text-stone-500';
+            } else {
+                document.body.style.backgroundColor = '#fdfaf5';
+                document.getElementById('btn-track-male').className = 'btn-touch-feedback flex-1 md:flex-initial px-5 py-2 rounded-xl text-xs md:text-sm font-bold transition-all text-stone-500';
+                document.getElementById('btn-track-female').className = 'btn-touch-feedback flex-1 md:flex-initial px-5 py-2 rounded-xl text-xs md:text-sm font-bold transition-all bg-white shadow-sm text-amber-700';
+            }
+
+            // Update associated UI configs
+            updatePreview();
+            updateChartData();
+        }
 
         function toggleEquipment(val) {
             hasEquipment = val;
-            document.getElementById('btn-no-equip').className = val ? 'px-4 py-2 rounded-lg text-sm font-semibold text-stone-500' : 'px-4 py-2 rounded-lg text-sm font-semibold transition-all bg-white shadow-sm';
-            document.getElementById('btn-equip').className = !val ? 'px-4 py-2 rounded-lg text-sm font-semibold text-stone-500' : 'px-4 py-2 rounded-lg text-sm font-semibold transition-all bg-white shadow-sm';
+            document.getElementById('btn-no-equip').className = val ? 'btn-touch-feedback flex-1 py-1.5 rounded-lg text-xs font-bold text-stone-400' : 'btn-touch-feedback flex-1 py-1.5 rounded-lg text-xs font-bold transition-all bg-white shadow-sm text-stone-800';
+            document.getElementById('btn-equip').className = !val ? 'btn-touch-feedback flex-1 py-1.5 rounded-lg text-xs font-bold text-stone-400' : 'btn-touch-feedback flex-1 py-1.5 rounded-lg text-xs font-bold transition-all bg-white shadow-sm text-stone-800';
             updatePreview();
+        }
+
+        function toggleWorkoutMode(mode) {
+            workoutMode = mode;
+            
+            // Setup views
+            document.getElementById('btn-mode-auto').className = mode === 'auto' ? 'btn-touch-feedback flex-1 py-1.5 rounded-lg text-xs font-bold transition-all bg-white shadow-sm text-stone-800' : 'btn-touch-feedback flex-1 py-1.5 rounded-lg text-xs font-bold text-stone-400';
+            document.getElementById('btn-mode-manual').className = mode === 'manual' ? 'btn-touch-feedback flex-1 py-1.5 rounded-lg text-xs font-bold transition-all bg-white shadow-sm text-stone-800' : 'btn-touch-feedback flex-1 py-1.5 rounded-lg text-xs font-bold text-stone-400';
+
+            // Live views
+            const autoBtn = document.getElementById('live-mode-auto');
+            const manualBtn = document.getElementById('live-mode-manual');
+            
+            if (mode === 'auto') {
+                autoBtn.className = 'btn-touch-feedback px-3 py-1.5 rounded-lg text-[10px] md:text-xs font-bold uppercase tracking-wider transition-all bg-stone-800 text-white shadow-sm';
+                manualBtn.className = 'btn-touch-feedback px-3 py-1.5 rounded-lg text-[10px] md:text-xs font-bold uppercase tracking-wider transition-all text-stone-500 hover:text-stone-800';
+                
+                document.getElementById('pause-btn').style.opacity = '1';
+                document.getElementById('pause-btn').disabled = false;
+                document.getElementById('timer-label').innerText = "seconds left";
+                
+                if (currentStepIndex >= 0) {
+                    loadStep(currentStepIndex);
+                }
+            } else {
+                autoBtn.className = 'btn-touch-feedback px-3 py-1.5 rounded-lg text-[10px] md:text-xs font-bold uppercase tracking-wider transition-all text-stone-500 hover:text-stone-800';
+                manualBtn.className = 'btn-touch-feedback px-3 py-1.5 rounded-lg text-[10px] md:text-xs font-bold uppercase tracking-wider transition-all bg-stone-800 text-white shadow-sm';
+                
+                document.getElementById('pause-btn').style.opacity = '0.4';
+                document.getElementById('pause-btn').disabled = true;
+                document.getElementById('timer-label').innerText = "elapsed (manual mode)";
+                
+                elapsedSeconds = 0;
+                document.getElementById('timer-display').innerText = elapsedSeconds + "s";
+                stopCurrentAudio();
+            }
+        }
+
+        function getActiveExercises() {
+            return selectedGender === 'male' ? exercisesMale : exercisesFemale;
         }
 
         function updatePreview() {
             const list = document.getElementById('preview-list');
-            list.innerHTML = exercises.map(ex => `
+            const activeExs = getActiveExercises();
+            list.innerHTML = activeExs.map(ex => `
                 <li class="flex items-center space-x-3 text-stone-600">
-                    <span class="text-lg">${ex.icon}</span>
-                    <span>${ex.name}</span>
+                    <span class="text-base">${ex.icon}</span>
+                    <span class="font-semibold text-xs md:text-sm">${ex.name}</span>
+                    <span class="text-[10px] text-stone-400">(${ex.focus})</span>
                 </li>
             `).join('');
+        }
+
+        function handleVoiceToggle() {
+            voiceEnabled = document.getElementById('voice-toggle').checked;
+            updateLiveVoiceUI();
+        }
+
+        function toggleLiveVoice() {
+            voiceEnabled = !voiceEnabled;
+            document.getElementById('voice-toggle').checked = voiceEnabled;
+            updateLiveVoiceUI();
+            if (!voiceEnabled) {
+                stopCurrentAudio();
+            } else {
+                announceCurrentStep(true);
+            }
+        }
+
+        function updateLiveVoiceUI() {
+            const btnText = document.getElementById('live-voice-text');
+            const btnIcon = document.getElementById('live-voice-icon');
+            if (voiceEnabled) {
+                btnText.innerText = "Voice On";
+                btnIcon.innerText = "🔊";
+            } else {
+                btnText.innerText = "Voice Muted";
+                btnIcon.innerText = "🔇";
+            }
+        }
+
+        function stopCurrentAudio() {
+            if (currentAudio) {
+                currentAudio.pause();
+                currentAudio = null;
+            }
+            if (window.speechSynthesis) {
+                window.speechSynthesis.cancel();
+            }
+            showAudioIndicator(false);
+        }
+
+        function showAudioIndicator(show) {
+            const visualizer = document.getElementById('speaking-wave');
+            if (show) {
+                visualizer.classList.remove('hidden');
+            } else {
+                visualizer.classList.add('hidden');
+            }
+        }
+
+        function writeString(view, offset, string) {
+            for (let i = 0; i < string.length; i++) {
+                view.setUint8(offset + i, string.charCodeAt(i));
+            }
+        }
+
+        function base64ToArrayBuffer(base64) {
+            const binaryString = window.atob(base64);
+            const len = binaryString.length;
+            const bytes = new Uint8Array(len);
+            for (let i = 0; i < len; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+            }
+            return bytes.buffer;
+        }
+
+        function pcmToWav(pcm16, sampleRate) {
+            const buffer = new ArrayBuffer(44 + pcm16.length * 2);
+            const view = new DataView(buffer);
+
+            writeString(view, 0, 'RIFF');
+            view.setUint32(4, 36 + pcm16.length * 2, true);
+            writeString(view, 8, 'WAVE');
+            writeString(view, 12, 'fmt ');
+            view.setUint32(16, 16, true);
+            view.setUint16(20, 1, true); 
+            view.setUint16(22, 1, true); 
+            view.setUint32(24, sampleRate, true);
+            view.setUint32(28, sampleRate * 2, true);
+            view.setUint16(32, 2, true);
+            view.setUint16(34, 16, true);
+            writeString(view, 36, 'data');
+            view.setUint32(40, pcm16.length * 2, true);
+
+            for (let i = 0; i < pcm16.length; i++) {
+                view.setInt16(44 + i * 2, pcm16[i], true);
+            }
+
+            return new Blob([buffer], { type: 'audio/wav' });
+        }
+
+        function playCountdownBeep(frequency = 580, duration = 0.15) {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(frequency, ctx.currentTime);
+                gain.gain.setValueAtTime(0.08, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + duration);
+            } catch (e) {
+                console.warn("AudioContext blocked beep.", e);
+            }
+        }
+
+        // Local Speech Synthesizer fallback & per-second counting
+        function speakVoice(text) {
+            if (!window.speechSynthesis || !voiceEnabled) return;
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = "en-US";
+            utterance.rate = 1.25; // Sightly faster for countdown compliance
+            utterance.onstart = () => showAudioIndicator(true);
+            utterance.onend = () => showAudioIndicator(false);
+            window.speechSynthesis.speak(utterance);
+        }
+
+        // AI Coaching Announcements via Gemini TTS API
+        async function playPremiumCoachVoice(speechText) {
+            if (!voiceEnabled) return;
+            stopCurrentAudio();
+            showAudioIndicator(true);
+
+            const selectedVoice = document.getElementById('voice-persona').value || "Sulafat";
+
+            try {
+                const apiKey = ""; 
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`;
+                
+                const promptModifier = `Say enthusiastically and clearly as an active fitness trainer. Mix simple English instructions with warm motivating Roman Urdu. Keep the sentence length below 20 words. Speech script: "${speechText}"`;
+
+                const payload = {
+                    contents: [{
+                        parts: [{ text: promptModifier }]
+                    }],
+                    generationConfig: {
+                        responseModalities: ["AUDIO"],
+                        speechConfig: {
+                            voiceConfig: {
+                                prebuiltVoiceConfig: { voiceName: selectedVoice }
+                            }
+                        }
+                    },
+                    model: "gemini-2.5-flash-preview-tts"
+                };
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) throw new Error("Voice API status: " + response.status);
+
+                const result = await response.json();
+                const part = result?.candidates?.[0]?.content?.parts?.[0];
+                const audioData = part?.inlineData?.data;
+                const mimeType = part?.inlineData?.mimeType;
+
+                if (audioData && mimeType && mimeType.startsWith("audio/")) {
+                    const sampleRate = parseInt(mimeType.match(/rate=(\d+)/)?.[1] || "24000", 10);
+                    const pcmData = base64ToArrayBuffer(audioData);
+                    const pcm16 = new Int16Array(pcmData);
+                    const wavBlob = pcmToWav(pcm16, sampleRate);
+                    const audioUrl = URL.createObjectURL(wavBlob);
+                    
+                    currentAudio = new Audio(audioUrl);
+                    currentAudio.onended = () => {
+                        showAudioIndicator(false);
+                    };
+                    await currentAudio.play();
+                } else {
+                    throw new Error("Invalid payload format");
+                }
+
+            } catch (error) {
+                console.warn("AI Voice synthesis fallback active...", error);
+                const pureText = speechText.replace(/[^a-zA-Z0-9\s]/g, ""); 
+                speakVoice(pureText);
+            }
+        }
+
+        function announceCurrentStep() {
+            if (!voiceEnabled) return;
+
+            if (voiceDebounceTimeout) clearTimeout(voiceDebounceTimeout);
+
+            voiceDebounceTimeout = setTimeout(() => {
+                const round = Math.floor(currentStepIndex / 10) + 1;
+                const phaseIndex = currentStepIndex % 10;
+                const exIndex = Math.floor(phaseIndex / 2);
+                const isRest = (phaseIndex % 2) !== 0;
+
+                const activeExs = getActiveExercises();
+                const ex = activeExs[exIndex];
+
+                let messageToSpeak = "";
+                if (isRest) {
+                    const nextExIndex = Math.floor(((currentStepIndex + 1) % 10) / 2);
+                    const nextEx = activeExs[nextExIndex] || activeExs[0];
+                    messageToSpeak = `Break time! Aaraam Karen. Next is ${nextEx.name}. Ready ho jayen!`;
+                } else {
+                    messageToSpeak = `Round ${round}. Let's perform ${ex.name}. ${ex.urduCue}`;
+                }
+
+                playPremiumCoachVoice(messageToSpeak);
+            }, 300);
         }
 
         function startWorkout() {
             document.getElementById('setup-view').classList.add('hidden');
             document.getElementById('workout-view').classList.remove('hidden');
-            document.getElementById('session-status').innerText = "Session Active";
-            document.getElementById('session-status').classList.add('text-orange-500');
-            nextStep();
-            runTimer();
+            document.getElementById('session-status').innerText = "Active Training";
+            document.getElementById('session-status').className = "text-xs font-bold text-red-500 uppercase tracking-widest";
+            
+            currentStepIndex = 0;
+            loadStep(currentStepIndex);
+            runIntervalEngine();
         }
 
-        function runTimer() {
-            timer = setInterval(() => {
-                if(isPaused) return;
+        function loadStep(index) {
+            if(index < 0) {
+                currentStepIndex = 0;
+                return;
+            }
+            if(index >= totalSteps) {
+                endWorkout();
+                return;
+            }
 
-                timeLeft--;
+            currentStepIndex = index;
+
+            const round = Math.floor(currentStepIndex / 10) + 1;
+            const phaseIndex = currentStepIndex % 10;
+            const exIndex = Math.floor(phaseIndex / 2);
+            const isRest = (phaseIndex % 2) !== 0;
+
+            const activeExs = getActiveExercises();
+            const ex = activeExs[exIndex];
+
+            const renderArea = document.getElementById('avatar-render-area');
+
+            if (isRest) {
+                const nextExIndex = Math.floor(((currentStepIndex + 1) % 10) / 2);
+                const nextEx = activeExs[nextExIndex] || activeExs[0];
+                updateUI(
+                    "Rest Phase / آرام کا وقت", 
+                    "Settle breath & grab water / سانس بحال کریں", 
+                    "Next up (اگلا پوز): " + nextEx.name, 
+                    "⏳", 
+                    `Round ${round} / 3`
+                );
+                timeLeft = 15;
+                document.getElementById('timer-display').className = "text-6xl sm:text-7xl md:text-8xl font-black tabular-nums text-stone-400 leading-none";
+                
+                // Inject Rest Animation
+                renderArea.innerHTML = generateAnimatedAvatarSVG(selectedGender, 'anim-rest', '⏳');
+            } else {
+                updateUI(
+                    ex.name, 
+                    ex.focus, 
+                    hasEquipment ? ex.tip : ex.tipNoEquip, 
+                    ex.icon, 
+                    `Round ${round} / 3`
+                );
+                timeLeft = 45;
+                document.getElementById('timer-display').className = "text-6xl sm:text-7xl md:text-8xl font-black tabular-nums text-emerald-600 leading-none";
+                
+                // Inject Live Exercise Animation
+                renderArea.innerHTML = generateAnimatedAvatarSVG(selectedGender, ex.animClass, ex.icon);
+            }
+
+            elapsedSeconds = 0;
+            if (workoutMode === 'manual') {
+                document.getElementById('timer-display').innerText = "0s";
+            } else {
                 document.getElementById('timer-display').innerText = timeLeft;
-
-                if(timeLeft <= 0) {
-                    nextStep();
-                }
-            }, 1000);
+                announceCurrentStep();
+            }
         }
 
         function nextStep() {
-            if (isResting) {
-                // Moving from Rest to Work
-                currentExIndex++;
-                if(currentExIndex >= exercises.length) {
-                    currentRound++;
-                    currentExIndex = 0;
-                }
+            loadStep(currentStepIndex + 1);
+        }
 
-                if(currentRound > 3) {
-                    endWorkout();
-                    return;
-                }
+        function previousStep() {
+            loadStep(currentStepIndex - 1);
+        }
 
-                isResting = false;
-                timeLeft = 45;
-                const ex = exercises[currentExIndex];
-                updateUI(ex.name, ex.focus, hasEquipment ? ex.tip : ex.tipNoEquip, ex.icon, `Round ${currentRound} / 3`);
-                document.getElementById('timer-display').classList.add('text-green-600');
-                document.getElementById('timer-display').classList.remove('text-stone-400');
-            } else {
-                // Moving from Work to Rest
-                isResting = true;
-                timeLeft = 15;
-                updateUI("Rest Period", "Catch your breath", "Up next: " + (exercises[currentExIndex + 1]?.name || exercises[0].name), "⏳", `Round ${currentRound} / 3`);
-                document.getElementById('timer-display').classList.add('text-stone-400');
-                document.getElementById('timer-display').classList.remove('text-green-600');
-            }
+        function runIntervalEngine() {
+            if(timer) clearInterval(timer);
+
+            timer = setInterval(() => {
+                if (isPaused) return;
+
+                if (workoutMode === 'auto') {
+                    timeLeft--;
+                    document.getElementById('timer-display').innerText = timeLeft;
+                    
+                    // Intelligent multi-voice guidance logic
+                    if (timeLeft === 44) {
+                        speakVoice("Your time starts now!");
+                    } else if (timeLeft === 30) {
+                        speakVoice("30 seconds left!");
+                    } else if (timeLeft === 15) {
+                        speakVoice("15 seconds remaining!");
+                    } else if (timeLeft >= 1 && timeLeft <= 5) {
+                        speakVoice(timeLeft.toString());
+                    } else if (timeLeft === 0) {
+                        playCountdownBeep(880, 0.3);
+                        nextStep();
+                    }
+                } else {
+                    elapsedSeconds++;
+                    document.getElementById('timer-display').innerText = elapsedSeconds + "s";
+                }
+            }, 1000);
         }
 
         function updateUI(name, focus, tip, icon, round) {
@@ -268,40 +1006,96 @@
             document.getElementById('current-ex-tip').innerText = tip;
             document.getElementById('ex-icon').innerText = icon;
             document.getElementById('round-indicator').innerText = round;
-            document.getElementById('timer-display').innerText = timeLeft;
         }
 
         function pauseWorkout() {
+            if (workoutMode === 'manual') return;
+
             isPaused = !isPaused;
-            document.getElementById('pause-btn').innerText = isPaused ? "Resume" : "Pause";
+            const btnText = document.getElementById('pause-text');
+            const btnIcon = document.getElementById('pause-icon');
+            
+            if (isPaused) {
+                btnText.innerText = "Resume";
+                btnIcon.innerText = "▶";
+                document.getElementById('session-status').innerText = "Paused";
+                document.getElementById('session-status').className = "text-xs font-bold text-stone-400 uppercase tracking-widest";
+                stopCurrentAudio();
+            } else {
+                btnText.innerText = "Pause";
+                btnIcon.innerText = "⏸";
+                document.getElementById('session-status').innerText = "Active Training";
+                document.getElementById('session-status').className = "text-xs font-bold text-red-500 uppercase tracking-widest";
+                announceCurrentStep();
+            }
         }
 
         function endWorkout() {
             clearInterval(timer);
+            stopCurrentAudio();
             document.getElementById('workout-view').classList.add('hidden');
             document.getElementById('complete-view').classList.remove('hidden');
             document.getElementById('session-status').innerText = "Session Complete";
-        }
+            document.getElementById('session-status').className = "text-xs font-bold text-emerald-600 uppercase tracking-widest";
+            
+            document.getElementById('total-duration-display').innerText = "15";
 
-        function quitWorkout() {
-            if(confirm("Are you sure you want to quit the session?")) {
-                location.reload();
+            if (voiceEnabled) {
+                playPremiumCoachVoice("Congratulations! Bohat zabardast! Ap ne aj ka routine complete kar lia hai. Shabash!");
             }
         }
 
-        function initRadar() {
+        // Custom non-alert/confirm Modal Actions
+        function triggerQuitModal() {
+            const modal = document.getElementById('quit-modal');
+            modal.classList.remove('hidden');
+            // Briefly pause countdown while decision model is open
+            if (workoutMode === 'auto' && !isPaused) {
+                pauseWorkout();
+            }
+        }
+
+        function dismissQuitModal() {
+            const modal = document.getElementById('quit-modal');
+            modal.classList.add('hidden');
+        }
+
+        function confirmQuitWorkout() {
+            stopCurrentAudio();
+            location.reload();
+        }
+
+        let radarChartInstance = null;
+
+        function updateChartData() {
             const ctx = document.getElementById('radarChart').getContext('2d');
-            new Chart(ctx, {
+            
+            // Dynamic distribution values based on Gender
+            const labelTitle = selectedGender === 'male' ? 'Male Muscle Intensity' : 'Female Muscle Intensity';
+            const dataValues = selectedGender === 'male' 
+                ? [90, 75, 80, 85, 75, 60] // Focus on Chest, Shoulders, Legs
+                : [65, 95, 70, 60, 80, 85]; // Focus on Hips, Glutes, Mobility
+
+            const accentColor = selectedGender === 'male' ? 'rgba(74, 111, 165, 0.15)' : 'rgba(212, 163, 115, 0.15)';
+            const strokeColor = selectedGender === 'male' ? '#4a6fa5' : '#d4a373';
+
+            if(radarChartInstance) {
+                radarChartInstance.destroy();
+            }
+
+            radarChartInstance = new Chart(ctx, {
                 type: 'radar',
                 data: {
-                    labels: ['Core', 'Glutes', 'Quads', 'Shoulders', 'Cardio', 'Mobility'],
+                    labels: ['Core Stability', 'Glutes/Hips', 'Quads', 'Chest & Arms', 'Cardio Output', 'Limb Mobility'],
                     datasets: [{
-                        label: 'Intensity Distribution',
-                        data: [85, 90, 80, 70, 75, 65],
+                        label: labelTitle,
+                        data: dataValues,
                         fill: true,
-                        backgroundColor: 'rgba(140, 120, 81, 0.2)',
-                        borderColor: '#8c7851',
-                        pointBackgroundColor: '#8c7851',
+                        backgroundColor: accentColor,
+                        borderColor: strokeColor,
+                        pointBackgroundColor: strokeColor,
+                        borderWidth: 2,
+                        pointRadius: 3
                     }]
                 },
                 options: {
@@ -311,7 +1105,17 @@
                         r: {
                             beginAtZero: true,
                             max: 100,
-                            ticks: { display: false }
+                            ticks: { display: false },
+                            grid: { color: '#eae4da' },
+                            angleLines: { color: '#eae4da' },
+                            pointLabels: {
+                                font: {
+                                    family: 'Plus Jakarta Sans',
+                                    size: 10,
+                                    weight: '600'
+                                },
+                                color: '#57534e'
+                            }
                         }
                     },
                     plugins: {
@@ -322,8 +1126,8 @@
         }
 
         window.onload = () => {
-            initRadar();
-            updatePreview();
+            toggleGenderTrack('male');
+            updateLiveVoiceUI();
         };
     </script>
 </body>
