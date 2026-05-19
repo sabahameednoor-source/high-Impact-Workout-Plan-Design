@@ -7,7 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght=300;400;600;700&display=swap');
         
         :root {
             --bg-base: #fcfaf7;
@@ -144,7 +144,9 @@
                 </div>
 
                 <!-- Live Configuration Parameters -->
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+                    
+                    <!-- Box 1: Customize Mode -->
                     <div class="bg-white p-5 md:p-6 rounded-3xl border border-stone-100 flex flex-col justify-between shadow-sm space-y-4">
                         <div class="space-y-4">
                             <div>
@@ -174,13 +176,75 @@
                         </div>
                     </div>
 
-                    <!-- Radar Distribution Display -->
-                    <div class="bg-white p-5 md:p-6 rounded-3xl border border-stone-100 shadow-sm lg:col-span-2 space-y-3">
-                        <h3 class="font-bold text-stone-800 flex items-center space-x-2 text-base md:text-lg">
-                            <span>📊</span> <span id="chart-title">Muscle Intensity Grid</span>
-                        </h3>
-                        <div class="chart-container">
-                            <canvas id="radarChart"></canvas>
+                    <!-- Box 2: Biometrics Panel (New Feature) -->
+                    <div class="bg-white p-5 md:p-6 rounded-3xl border border-stone-100 flex flex-col justify-between shadow-sm space-y-4">
+                        <div>
+                            <h3 class="font-bold text-stone-800 text-base md:text-lg mb-1 flex items-center gap-2">
+                                <span>🧬</span> Bio-Metrics & BMI Goal
+                            </h3>
+                            <p class="text-xs text-stone-500 mb-3">اپنی عمر، وزن اور قد درج کریں تاکہ BMI اور ہدف سیٹ کیا جا سکے۔</p>
+                            
+                            <!-- Age Slider -->
+                            <div class="space-y-1 mb-3">
+                                <div class="flex justify-between text-xs font-bold text-stone-600">
+                                    <span>Age (عمر):</span>
+                                    <span id="age-val" class="text-stone-800">30 Yrs</span>
+                                </div>
+                                <input type="range" id="input-age" min="15" max="80" value="30" oninput="handleBiometricsChange()" class="w-full accent-stone-700 h-1.5 bg-stone-200 rounded-lg appearance-none cursor-pointer">
+                            </div>
+
+                            <!-- Weight Slider -->
+                            <div class="space-y-1 mb-3">
+                                <div class="flex justify-between text-xs font-bold text-stone-600">
+                                    <span>Weight (وزن):</span>
+                                    <span id="weight-val" class="text-stone-800">70 Kg</span>
+                                </div>
+                                <input type="range" id="input-weight" min="40" max="140" value="70" oninput="handleBiometricsChange()" class="w-full accent-stone-700 h-1.5 bg-stone-200 rounded-lg appearance-none cursor-pointer">
+                            </div>
+
+                            <!-- Height Slider (New for BMI) -->
+                            <div class="space-y-1 mb-4">
+                                <div class="flex justify-between text-xs font-bold text-stone-600">
+                                    <span>Height (قد):</span>
+                                    <span id="height-val" class="text-stone-800">170 cm</span>
+                                </div>
+                                <input type="range" id="input-height" min="120" max="220" value="170" oninput="handleBiometricsChange()" class="w-full accent-stone-700 h-1.5 bg-stone-200 rounded-lg appearance-none cursor-pointer">
+                            </div>
+
+                            <!-- Computed Targeted Goals Block -->
+                            <div class="bg-stone-50 p-3 rounded-2xl border border-stone-100 space-y-2 text-xs">
+                                <div class="flex justify-between items-center pb-1.5 border-b border-stone-200/60">
+                                    <span class="text-stone-500 font-semibold">⚖️ BMI (جسمانی انڈیکس):</span>
+                                    <div class="flex items-center space-x-1.5">
+                                        <span id="bmi-val" class="font-extrabold text-stone-800">--</span>
+                                        <span id="bmi-status" class="text-[9px] px-2 py-0.5 rounded-full font-bold text-white bg-emerald-500">Normal</span>
+                                    </div>
+                                </div>
+                                <div class="flex justify-between items-center pb-1.5 border-b border-stone-200/60">
+                                    <span class="text-stone-500 font-semibold">🎯 Target Burn / کیلوریز:</span>
+                                    <span id="target-calories" class="font-extrabold text-stone-800 text-emerald-600">-- kcal</span>
+                                </div>
+                                <div class="flex justify-between items-center pb-1.5 border-b border-stone-200/60">
+                                    <span class="text-stone-500 font-semibold">💓 Heart Rate / نبض کی حد:</span>
+                                    <span id="target-hr" class="font-extrabold text-stone-800 text-red-500">-- BPM</span>
+                                </div>
+                                <div class="flex flex-col gap-0.5 pt-0.5">
+                                    <span class="text-[10px] text-stone-400 font-bold uppercase tracking-wider">Recommended Strategy (تجویز)</span>
+                                    <span id="target-strategy" class="font-semibold text-stone-700 text-[11px] leading-tight">--</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Box 3: Radar Distribution Display -->
+                    <div class="bg-white p-5 md:p-6 rounded-3xl border border-stone-100 shadow-sm flex flex-col justify-between space-y-3">
+                        <div>
+                            <h3 class="font-bold text-stone-800 flex items-center space-x-2 text-base md:text-lg">
+                                <span>📊</span> <span id="chart-title">Muscle Intensity Grid</span>
+                            </h3>
+                            <div class="chart-container">
+                                <canvas id="radarChart"></canvas>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -270,6 +334,18 @@
                     <p id="current-ex-focus" class="text-[#8c7851] font-semibold text-sm sm:text-base">Preparation Phase</p>
                 </div>
 
+                <!-- Dynamic Target HUD inside workout screen -->
+                <div class="grid grid-cols-2 gap-3 bg-stone-50 p-3.5 rounded-2xl border border-stone-100 max-w-sm mx-auto">
+                    <div class="text-center">
+                        <span class="text-[9px] uppercase tracking-wider text-stone-400 font-bold block">Target Burn Goal (ہدف)</span>
+                        <span id="hud-calories" class="text-sm font-extrabold text-stone-700">-- kcal</span>
+                    </div>
+                    <div class="text-center border-l border-stone-200">
+                        <span class="text-[9px] uppercase tracking-wider text-stone-400 font-bold block">Target HR Range (نبض)</span>
+                        <span id="hud-hr" class="text-sm font-extrabold text-stone-700">-- BPM</span>
+                    </div>
+                </div>
+
                 <!-- Dynamic Animated Avatar Space with Swipe Touch Support -->
                 <div id="avatar-touch-container" class="bg-white rounded-3xl border border-stone-100 shadow-sm p-4 flex flex-col items-center justify-center relative overflow-hidden h-64 md:h-72 select-none touch-none">
                     <!-- Speaking wave -->
@@ -337,14 +413,18 @@
             <span class="text-6xl md:text-7xl mb-4 block">🏆</span>
             <h2 class="text-3xl md:text-4xl font-bold text-stone-900 leading-tight">Session Finished!</h2>
             <p class="text-stone-500 text-sm max-w-xs md:max-w-md mx-auto">Awesome job! You successfully finished all rounds of your customized workout routine.</p>
-            <div class="max-w-xs md:max-w-sm mx-auto grid grid-cols-2 gap-3">
+            <div class="max-w-xs md:max-w-md mx-auto grid grid-cols-3 gap-3">
                 <div class="bg-white p-4 rounded-2xl border border-stone-100 shadow-sm">
                     <p class="text-2xl font-bold text-stone-800" id="total-duration-display">15</p>
                     <p class="text-[10px] text-stone-400 uppercase font-semibold">Minutes Done</p>
                 </div>
                 <div class="bg-white p-4 rounded-2xl border border-stone-100 shadow-sm">
-                    <p class="text-2xl font-bold text-stone-800">15</p>
-                    <p class="text-[10px] text-stone-400 uppercase font-semibold">Interval Steps</p>
+                    <p class="text-2xl font-bold text-stone-800" id="complete-calories-burned">--</p>
+                    <p class="text-[10px] text-stone-400 uppercase font-semibold">Est. Kcal Burn</p>
+                </div>
+                <div class="bg-white p-4 rounded-2xl border border-stone-100 shadow-sm">
+                    <p class="text-2xl font-bold text-stone-800" id="complete-avg-hr">--</p>
+                    <p class="text-[10px] text-stone-400 uppercase font-semibold">Target HR</p>
                 </div>
             </div>
             <button onclick="location.reload()" class="btn-touch-feedback bg-stone-800 text-white px-8 py-3.5 rounded-2xl font-bold hover:bg-stone-750 shadow-md text-sm">Finish</button>
@@ -352,7 +432,7 @@
 
     </main>
 
-    <!-- Custom Beautiful Modal for Exit Confirmation (Replaces alert/confirm) -->
+    <!-- Custom Beautiful Modal for Exit Confirmation -->
     <div id="quit-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-sm transition-opacity duration-300">
         <div class="bg-white w-full max-w-md p-6 rounded-3xl shadow-2xl border border-stone-100 transform scale-100 transition-transform duration-300 space-y-5">
             <div class="text-center space-y-2">
@@ -485,6 +565,15 @@
         let currentAudio = null;
         let voiceDebounceTimeout = null;
 
+        // Dynamic metrics for age and weight-based calculation
+        let userAge = 30;
+        let userWeight = 70;
+        let userHeight = 170; // New for BMI calculation
+        let targetCalories = 0;
+        let targetHRMin = 0;
+        let targetHRMax = 0;
+        let targetStrategy = "";
+
         // Custom SVGs corresponding to Gender and Exercise
         function generateAnimatedAvatarSVG(gender, exerciseClass, icon) {
             const bodyColor = gender === 'male' ? '#3a5f85' : '#c38d5d';
@@ -601,6 +690,89 @@
             }
         }
 
+        function handleBiometricsChange() {
+            userAge = parseInt(document.getElementById('input-age').value, 10);
+            userWeight = parseInt(document.getElementById('input-weight').value, 10);
+            userHeight = parseInt(document.getElementById('input-height').value, 10);
+            
+            document.getElementById('age-val').innerText = userAge + " Yrs";
+            document.getElementById('weight-val').innerText = userWeight + " Kg";
+            document.getElementById('height-val').innerText = userHeight + " cm";
+            
+            updateDynamicGoals();
+        }
+
+        function updateDynamicGoals() {
+            const maxHR = 220 - userAge;
+            targetHRMin = Math.round(maxHR * 0.55); // Fat burn / light aerobic floor
+            targetHRMax = Math.round(maxHR * 0.70); // Low-impact intensity ceiling
+            
+            const metValue = selectedGender === 'male' ? 4.0 : 3.5;
+            // Calories Formula = METs * 0.0175 * weight * minutes (15 mins total)
+            targetCalories = Math.round(metValue * 0.0175 * userWeight * 15);
+            
+            // BMI Calculation
+            const heightInMeters = userHeight / 100;
+            const bmi = (userWeight / (heightInMeters * heightInMeters)).toFixed(1);
+            
+            let bmiStatusText = "Normal";
+            let bmiStatusClass = "bg-emerald-500 text-white";
+            let bmiStatusUrdu = "صحت مند وزن";
+            
+            if (bmi < 18.5) {
+                bmiStatusText = "Underweight";
+                bmiStatusClass = "bg-sky-500 text-white";
+                bmiStatusUrdu = "کم وزن";
+            } else if (bmi >= 18.5 && bmi < 25) {
+                bmiStatusText = "Normal";
+                bmiStatusClass = "bg-emerald-500 text-white";
+                bmiStatusUrdu = "صحت مند وزن";
+            } else if (bmi >= 25 && bmi < 30) {
+                bmiStatusText = "Overweight";
+                bmiStatusClass = "bg-amber-500 text-white";
+                bmiStatusUrdu = "زیادہ وزن";
+            } else {
+                bmiStatusText = "Obese";
+                bmiStatusClass = "bg-rose-500 text-white";
+                bmiStatusUrdu = "موٹاپا";
+            }
+            
+            document.getElementById('bmi-val').innerText = bmi;
+            const statusEl = document.getElementById('bmi-status');
+            statusEl.innerText = `${bmiStatusText} (${bmiStatusUrdu})`;
+            statusEl.className = `text-[9px] px-2 py-0.5 rounded-full font-bold ${bmiStatusClass}`;
+            
+            // Dynamic Strategy based on BMI and Age
+            if (userAge > 50) {
+                targetStrategy = "Joint Protection & Smooth Mobility (جوڑوں کی حفاظت اور لچک)";
+            } else if (bmi >= 30) {
+                targetStrategy = "Knee-Safe Weight Management (گھٹنے اور کمر کے بچاؤ کے ساتھ چربی جلائیں)";
+            } else if (bmi >= 25) {
+                targetStrategy = "Active Fat Loss & Endurance (کیلوریز جلانے اور سٹیمنا بڑھانے پر توجہ)";
+            } else if (bmi < 18.5) {
+                targetStrategy = "Strength Conditioning & Lean Muscle Gain (مسل ٹون اور ہلکی طاقت کی بحالی)";
+            } else {
+                targetStrategy = "Lean Muscular Tone & Cardiovascular Endurance (مسل ٹون اور بہترین صحت برقرار رکھیں)";
+            }
+            
+            // Update Setup View DOM
+            document.getElementById('target-calories').innerText = targetCalories + " kcal";
+            document.getElementById('target-hr').innerText = `${targetHRMin} - ${targetHRMax} BPM`;
+            document.getElementById('target-strategy').innerText = targetStrategy;
+            
+            // Update Workout HUD elements
+            const hudCal = document.getElementById('hud-calories');
+            const hudHr = document.getElementById('hud-hr');
+            if (hudCal) hudCal.innerText = targetCalories + " kcal";
+            if (hudHr) hudHr.innerText = `${targetHRMin}-${targetHRMax} BPM`;
+            
+            // Update Summary Screen elements
+            const compCal = document.getElementById('complete-calories-burned');
+            const compHr = document.getElementById('complete-avg-hr');
+            if (compCal) compCal.innerText = targetCalories;
+            if (compHr) compHr.innerText = `${Math.round((targetHRMin + targetHRMax)/2)} bpm`;
+        }
+
         function toggleGenderTrack(gender) {
             selectedGender = gender;
             
@@ -618,6 +790,7 @@
             // Update associated UI configs
             updatePreview();
             updateChartData();
+            updateDynamicGoals();
         }
 
         function toggleEquipment(val) {
@@ -792,7 +965,7 @@
             window.speechSynthesis.cancel();
             const utterance = new SpeechSynthesisUtterance(text);
             utterance.lang = "en-US";
-            utterance.rate = 1.25; // Sightly faster for countdown compliance
+            utterance.rate = 1.25; // Slightly faster for countdown compliance
             utterance.onstart = () => showAudioIndicator(true);
             utterance.onend = () => showAudioIndicator(false);
             window.speechSynthesis.speak(utterance);
@@ -810,7 +983,7 @@
                 const apiKey = ""; 
                 const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`;
                 
-                const promptModifier = `Say enthusiastically and clearly as an active fitness trainer. Mix simple English instructions with warm motivating Roman Urdu. Keep the sentence length below 20 words. Speech script: "${speechText}"`;
+                const promptModifier = `Say enthusiastically and clearly as an active fitness trainer. Mix simple English instructions with warm motivating Roman Urdu. Keep the sentence length below 25 words. Speech script: "${speechText}"`;
 
                 const payload = {
                     contents: [{
@@ -878,12 +1051,21 @@
                 const ex = activeExs[exIndex];
 
                 let messageToSpeak = "";
+                
+                // Add dynamic biometrics goal onboarding with BMI on step 0
+                let startGreeting = "";
+                if (currentStepIndex === 0) {
+                    const heightInMeters = userHeight / 100;
+                    const bmi = (userWeight / (heightInMeters * heightInMeters)).toFixed(1);
+                    startGreeting = `Let's start your workout! Today, your BMI is ${bmi}, and your targeted burn is ${targetCalories} calories, keeping your heart rate between ${targetHRMin} and ${targetHRMax} bpm. Shabaash! `;
+                }
+
                 if (isRest) {
                     const nextExIndex = Math.floor(((currentStepIndex + 1) % 10) / 2);
                     const nextEx = activeExs[nextExIndex] || activeExs[0];
                     messageToSpeak = `Break time! Aaraam Karen. Next is ${nextEx.name}. Ready ho jayen!`;
                 } else {
-                    messageToSpeak = `Round ${round}. Let's perform ${ex.name}. ${ex.urduCue}`;
+                    messageToSpeak = startGreeting + `Round ${round}. Let's perform ${ex.name}. ${ex.urduCue}`;
                 }
 
                 playPremiumCoachVoice(messageToSpeak);
@@ -1041,7 +1223,7 @@
             document.getElementById('total-duration-display').innerText = "15";
 
             if (voiceEnabled) {
-                playPremiumCoachVoice("Congratulations! Bohat zabardast! Ap ne aj ka routine complete kar lia hai. Shabash!");
+                playPremiumCoachVoice(`Congratulations! Bohat zabardast! You successfully burned ${targetCalories} calories. Ap ne aj ka routine complete kar lia hai. Shabash!`);
             }
         }
 
